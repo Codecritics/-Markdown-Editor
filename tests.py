@@ -1,62 +1,110 @@
-from hstest.stage_test import StageTest
-from hstest.test_case import TestCase
-from hstest.check_result import CheckResult
+from hstest import StageTest, TestedProgram, CheckResult, dynamic_test
 
 
-class SumTest(StageTest):
-    text_elements = ['john lennon', 'john winston ono lennon', 'are the songs he wrote',
-                     'imagine', 'norwegian wood', 'come together', 'in my life', 'hey jude']
+class Test(StageTest):
 
-    def generate(self):
-        return [TestCase()]
+    @dynamic_test
+    def test1(self):
+        pr = TestedProgram()
+        pr.start()
 
-    def check(self, reply, attach):
-        if 'list of albums' in reply.lower():
-            return CheckResult.wrong('The example in the Example section is for reference only.\n'
-                                     'You need to print the raw markdown code of the snippet '
-                                     'shown in the Objectives section.')
+        output = pr.execute('random').strip().lower()
+        if 'unknown formatting type or command' not in output.strip().lower():
+            return CheckResult.wrong('In case of an unknown formatter the program should return the corresponding message: "Unknown formatting type or command"')
 
-        reply = reply.strip().splitlines()
-        while '' in reply:
-            reply.remove('')
-        for reply_line, text_element in zip(reply, self.text_elements):
-            if text_element not in reply_line.lower():
-                return CheckResult.wrong('The output of your program does not include all the lines from the text.\n'
-                                         'You need to print the raw markdown code of the snippet '
-                                         'shown in the Objectives section.')
+        pr.execute('!done')
+        if not pr.is_finished():
+            return CheckResult.wrong('Your program should finish its execution whenever !done is an input')
 
-        if reply[0].strip().lower().split() != ['#', 'john', 'lennon']:
-            return CheckResult.wrong(f'Incorrect Markdown syntax for the heading:\n'
-                                     f"'{reply[0]}'\n"
-                                     f"To make a heading, use the hash sign (#).")
-        elif reply[1].strip('. ').lower().split() != ['or', '***john', 'winston', 'ono', 'lennon***',
-                                                      'was', 'one', 'of', '*the', 'beatles*']:
-            return CheckResult.wrong(f'Incorrect Markdown syntax for the following line:\n'
-                                     f"'{reply[1]}'\n"
-                                     f"The phrase 'John Winston Ono Lennon' should be both bold and italic "
-                                     f"and 'The Beatles' should be italic.")
+        return CheckResult.correct()
 
-        unordered_list = reply[3:]
-        for item in unordered_list:
-            if not item.startswith(('* ', '+ ', '- ')):
-                return CheckResult.wrong(f'Incorrect Markdown syntax for an unordered list.\n'
-                                         f'You need to use the -, *, or + symbol with a whitespace '
-                                         f'in front of list items, for example:\n'
-                                         f"'* Imagine'")
+    @dynamic_test
+    def test2(self):
+        pr = TestedProgram()
+        pr.start()
+        formatters = ['plain', 'bold', 'italic', 'header', 'ordered-list', 'unordered-list',
+                      'link', 'inline-code', 'new-line']
+        commands = ['!help', '!done']
 
-        last_line = '~~hey jude~~ (that was *mccartney*)'.split()
-        for el in last_line[:2]:
-            if el not in unordered_list[-1].strip().lower().split():
-                return CheckResult.wrong(f'Incorrect Markdown syntax for the following line:\n'
-                                         f"'{unordered_list[-1]}'\n"
-                                         f"Most likely, you did not make the song title strikethrough.")
-        if last_line[-1] not in unordered_list[-1].strip().lower().split():
-            return CheckResult.wrong(f'Incorrect Markdown syntax for the following line:\n'
-                                     f"'{unordered_list[-1]}'\n"
-                                     f"Most likely, you did not make the name italic.")
+        output = list(map(lambda item: item.lower(), pr.execute('!help').split('\n')))
+        if len(output) != 3:
+            return CheckResult.wrong('!help command should return the list of available formatting types, and the list of special commands, on separate rows, and the prompt a user for an input')
+
+        for formatter in formatters:
+            if formatter not in output[0].split():
+                return CheckResult.wrong('One or more formatting types are not present in the output of !help command')
+
+        for command in commands:
+            if command not in output[1].split():
+                return CheckResult.wrong('One or more special commands are not present in the output of !help command')
+
+        if 'formatter' not in output[2].strip():
+            return CheckResult.wrong('A user should be prompted for input again, i.e  "- Choose a formatter: > "')
+
+        pr.execute('!done')
+        if not pr.is_finished():
+            return CheckResult.wrong('Your program should finish its execution whenever !done is an input')
+
+        return CheckResult.correct()
+
+    @dynamic_test
+    def test3(self):
+        pr = TestedProgram()
+        pr.start()
+
+        output = pr.execute('header').strip().lower()
+        if len(output.split('\n')) != 1 or 'formatter' not in output.strip().lower():
+            return CheckResult.wrong('A user should be prompted for input again, i.e  "- Choose a formatter: > "')
+
+        output = pr.execute('ordered-list').strip().lower()
+        if len(output.split('\n')) != 1 or 'formatter' not in output.strip().lower():
+            return CheckResult.wrong('A user should be prompted for input again, i.e  "- Choose a formatter: > "')
+
+        output = pr.execute('unordered-list').strip().lower()
+        if len(output.split('\n')) != 1 or 'formatter' not in output.strip().lower():
+            return CheckResult.wrong('A user should be prompted for input again, i.e  "- Choose a formatter: > "')
+
+        output = pr.execute('link').strip().lower()
+        if len(output.split('\n')) != 1 or 'formatter' not in output.strip().lower():
+            return CheckResult.wrong('A user should be prompted for input again, i.e  "- Choose a formatter: > "')
+
+        output = pr.execute('inline-code').strip().lower()
+        if len(output.split('\n')) != 1 or 'formatter' not in output.strip().lower():
+            return CheckResult.wrong('A user should be prompted for input again, i.e  "- Choose a formatter: > "')
+
+        output = pr.execute('new-line').strip().lower()
+        if len(output.split('\n')) != 1 and 'formatter' not in output.strip().lower():
+            return CheckResult.wrong('A user should be prompted for input again, i.e  "- Choose a formatter: > "')
+
+        pr.execute('!done')
+        if not pr.is_finished():
+            return CheckResult.wrong('Your program should finish its execution whenever !done is an input')
+
+        return CheckResult.correct()
+
+    @dynamic_test
+    def test4(self):
+        pr = TestedProgram()
+        pr.start()
+
+        output = pr.execute('plain').strip().lower()
+        if len(output.split('\n')) != 1 or 'formatter' not in output.strip().lower():
+            return CheckResult.wrong('A user should be prompted for input again, i.e  "- Choose a formatter: > "')
+
+        output = pr.execute('bold').strip().lower()
+        if len(output.split('\n')) != 1 or 'formatter' not in output.strip().lower():
+            return CheckResult.wrong('A user should be prompted for input again, i.e  "- Choose a formatter: > "')
+
+        output = pr.execute('italic').strip().lower()
+        if len(output.split('\n')) != 1 or 'formatter' not in output.strip().lower():
+            return CheckResult.wrong('A user should be prompted for input again, i.e  "- Choose a formatter: > "')
+
+        pr.execute('!done')
+        if not pr.is_finished():
+            return CheckResult.wrong('Your program should finish its execution whenever !done is an input')
 
         return CheckResult.correct()
 
 
 if __name__ == '__main__':
-    SumTest().run_tests()
+    Test().run_tests()
