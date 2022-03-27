@@ -44,6 +44,8 @@ def markdown_params():
                 print("Available formatters:", *tuple(list(formatters.keys())))
                 print("Available commands:", *commands)
             elif mk_format == "!done":
+                with open("output.md", "w") as file:
+                    file.write(output)
                 break
             output += apply_formatter(mk_format)
             print(output)
@@ -57,7 +59,7 @@ if __name__ == '__main__':
     commands = ("!help", "!done")
 
     formatters = {
-        "header": string.Template("$text \n"),
+        "header": string.Template("$text\n"),
         "plain": string.Template("$text"),
         "bold": string.Template("**$text**"),
         "italic": string.Template("*$text*"),
