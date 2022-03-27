@@ -13,6 +13,16 @@ def apply_formatter(mk_format: str):
             formatted_string += f"{header_lvl * '#'} "
         text = input("Text:")
         formatted_string += formatters[mk_format].substitute(text=text)
+    elif mk_format in ("ordered-list", "unordered-list"):
+        while True:
+            nb_lists = int(input('Number of rows: '))
+            if nb_lists > 0:
+                break
+            print('The number of rows should be greater than zero')
+
+        for i in range(1, nb_lists + 1):
+            formatted_string += formatters[mk_format].substitute(i=i, text=input(f"Row #{i}: "))
+
     elif mk_format == "link":
         label = input("Label:")
         url = input("URL:")
@@ -25,7 +35,7 @@ def apply_formatter(mk_format: str):
 def markdown_params():
     output = ""
     while True:
-        mk_format = input("Choose a formatter:")
+        mk_format = input("Choose a formatter: ")
         while mk_format not in tuple(list(formatters.keys())) + commands:
             print("Unknown formatting type or command")
             mk_format = input("Choose a formatter:")
@@ -54,5 +64,7 @@ if __name__ == '__main__':
         "inline-code": string.Template("`$text`"),
         "new-line": "\n",
         "link": string.Template("[$label]($url)"),
+        "ordered-list": string.Template("$i. $text\n"),
+        "unordered-list": string.Template("* $text\n")
     }
     main()
